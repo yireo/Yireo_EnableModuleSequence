@@ -9,7 +9,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Yireo\ExtensionChecker\Exception\ModuleNotFoundException;
 use Symfony\Component\Console\Input\ArrayInput;
 
 class ModuleEnableSequenceCommand extends Command
@@ -53,6 +52,10 @@ class ModuleEnableSequenceCommand extends Command
     private function getModuleSequence(string $moduleName): array
     {
         $modulePath = $this->componentRegistrar->getPath(ComponentRegistrar::MODULE, $moduleName);
+        if (empty($modulePath)) {
+            return [];
+        }
+
         $moduleXmlFile = $modulePath.'/etc/module.xml';
 
         $configNode = simplexml_load_file($moduleXmlFile);
