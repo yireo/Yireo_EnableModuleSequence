@@ -10,5 +10,5 @@ bin/magento module:enable Yireo_EnableModuleSequence
 
 ### Usage
 ```bash
-bin/magento module:enable:sequence Yireo_Example
+bin/magento module:sequence Yireo_Example
 ```
