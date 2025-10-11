@@ -21,7 +21,7 @@ class ModuleEnableSequenceCommand extends Command
 
     protected function configure()
     {
-        $this->setName('module:enable:sequence');
+        $this->setName('module:sequence');
         $this->setDescription('Enable a module and its module sequence at once');
 
         $this->addArgument(
