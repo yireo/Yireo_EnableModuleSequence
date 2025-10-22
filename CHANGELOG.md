@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 22 October 2025
+### Fixed
+- Update README
+- Rename command from module:enable:sequence to module:sequence
+- Return empty if no module is found
+
 ## [1.0.0] - 25 September 2025
 ### Added
 - Initial release
