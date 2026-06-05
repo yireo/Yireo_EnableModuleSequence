@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 05 June 2026
+### Fixed
+- Allow running command with one or more modules
+
 ## [1.0.1] - 22 October 2025
 ### Fixed
 - Update README
