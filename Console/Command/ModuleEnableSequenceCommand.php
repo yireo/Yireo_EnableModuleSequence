@@ -26,8 +26,8 @@ class ModuleEnableSequenceCommand extends Command
 
         $this->addArgument(
             'module',
-            InputArgument::REQUIRED,
-            'Name of the module'
+            InputArgument::REQUIRED | InputArgument::IS_ARRAY,
+            'Name of one or more modules'
         );
 
         parent::configure();
@@ -35,9 +35,17 @@ class ModuleEnableSequenceCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $moduleName = $input->getArgument('module');
-        $moduleSequence = $this->getModuleSequence($moduleName);
-        $moduleSequence[] = $moduleName;
+        $moduleNames = $input->getArgument('module');
+
+        $moduleSequence = [];
+        foreach ($moduleNames as $moduleName) {
+            foreach ($this->getModuleSequence($moduleName) as $sequenceModule) {
+                $moduleSequence[] = $sequenceModule;
+            }
+            $moduleSequence[] = $moduleName;
+        }
+
+        $moduleSequence = array_values(array_unique($moduleSequence));
 
         $cmd = $this->getApplication()->find('module:enable');
 
