@@ -7,7 +7,6 @@
     "module_name": "Yireo_EnableModuleSequence",
     "composer_name": "yireo/magento2-enable-module-sequence",
     "php_versions": [
-        "8.1",
         "8.2",
         "8.3",
         "8.4",
