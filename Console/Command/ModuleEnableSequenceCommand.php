@@ -39,22 +39,43 @@ class ModuleEnableSequenceCommand extends Command
 
         $moduleSequence = [];
         foreach ($moduleNames as $moduleName) {
-            foreach ($this->getModuleSequence($moduleName) as $sequenceModule) {
-                $moduleSequence[] = $sequenceModule;
-            }
-            $moduleSequence[] = $moduleName;
+            $this->collectModuleSequence($moduleName, $moduleSequence);
         }
-
-        $moduleSequence = array_values(array_unique($moduleSequence));
 
         $cmd = $this->getApplication()->find('module:enable');
 
-        $input = new ArrayInput([
-            'module' => $moduleSequence
+        $enableInput = new ArrayInput([
+            'module' => array_values($moduleSequence)
         ]);
 
-        $input->setInteractive(false);
-        return $cmd->run($input, $output);
+        $enableInput->setInteractive(false);
+        return $cmd->run($enableInput, $output);
+    }
+
+    /**
+     * Add the given module and all of its sequence modules (recursively) to the collected list,
+     * with each dependency listed before the module depending upon it.
+     *
+     * @param string $moduleName
+     * @param array $collected Collected module names, keyed by module name
+     * @return void
+     */
+    private function collectModuleSequence(string $moduleName, array &$collected): void
+    {
+        if (isset($collected[$moduleName])) {
+            return;
+        }
+
+        // Claim the module upfront, so that a circular sequence does not cause endless recursion
+        $collected[$moduleName] = $moduleName;
+
+        foreach ($this->getModuleSequence($moduleName) as $sequenceModule) {
+            $this->collectModuleSequence($sequenceModule, $collected);
+        }
+
+        // Move the module after its own dependencies
+        unset($collected[$moduleName]);
+        $collected[$moduleName] = $moduleName;
     }
 
     private function getModuleSequence(string $moduleName): array
@@ -65,8 +86,15 @@ class ModuleEnableSequenceCommand extends Command
         }
 
         $moduleXmlFile = $modulePath.'/etc/module.xml';
+        if (!is_file($moduleXmlFile)) {
+            return [];
+        }
 
         $configNode = simplexml_load_file($moduleXmlFile);
+        if (!$configNode instanceof SimpleXMLElement) {
+            return [];
+        }
+
         $moduleSequence = [];
         if ($configNode->module->sequence) {
             foreach ($configNode->module->sequence->module as $sequenceModule) {

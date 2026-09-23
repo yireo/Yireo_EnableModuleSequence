@@ -21,6 +21,12 @@ bin/magento module:enable Yireo_EnableModuleSequence
 bin/magento module:sequence Yireo_Example
 ```
 
+Multiple modules can be passed at once. All of them, plus their sequence dependencies (recursively), are
+enabled in a single `module:enable` call:
+```bash
+bin/magento module:sequence Yireo_Example Yireo_AnotherExample
+```
+
 ## Current status
 
 <!-- badges.test.start -->
