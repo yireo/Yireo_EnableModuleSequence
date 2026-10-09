@@ -98,7 +98,14 @@ class ModuleEnableSequenceCommand extends Command
         $moduleSequence = [];
         if ($configNode->module->sequence) {
             foreach ($configNode->module->sequence->module as $sequenceModule) {
-                $moduleSequence[] = (string)$sequenceModule['name'];
+                $sequenceModuleName = (string)$sequenceModule['name'];
+
+                // A module sequence is a soft dependency, so skip modules that are not installed
+                if (empty($this->componentRegistrar->getPath(ComponentRegistrar::MODULE, $sequenceModuleName))) {
+                    continue;
+                }
+
+                $moduleSequence[] = $sequenceModuleName;
             }
         }
 

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Skip modules without a readable `etc/module.xml` instead of failing
+- Skip sequence modules that are not installed, instead of failing with "Unknown module(s)"
 
 ## [1.0.2] - 05 June 2026
 ### Fixed
