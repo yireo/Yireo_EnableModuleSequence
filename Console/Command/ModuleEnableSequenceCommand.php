@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Yireo\EnableModuleSequence\Console\Command;
 
 use Magento\Framework\Component\ComponentRegistrar;
+use Magento\Framework\Exception\FileSystemException;
+use Magento\Framework\Filesystem\Driver\File as FileDriver;
 use SimpleXMLElement;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,7 +17,9 @@ class ModuleEnableSequenceCommand extends Command
 {
     public function __construct(
         private readonly ComponentRegistrar $componentRegistrar,
-        ?string $name = null)  {
+        private readonly FileDriver $fileDriver,
+        ?string $name = null
+    ) {
         parent::__construct($name);
     }
 
@@ -86,7 +90,11 @@ class ModuleEnableSequenceCommand extends Command
         }
 
         $moduleXmlFile = $modulePath.'/etc/module.xml';
-        if (!is_file($moduleXmlFile)) {
+        try {
+            if (!$this->fileDriver->isFile($moduleXmlFile)) {
+                return [];
+            }
+        } catch (FileSystemException $e) {
             return [];
         }
 
