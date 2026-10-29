@@ -1,0 +1,62 @@
+<?php
+declare(strict_types=1);
+
+namespace Yireo\EnableModuleSequence\Test\Integration\Console\Command;
+
+use Magento\Framework\Console\CommandListInterface;
+use Magento\TestFramework\Helper\Bootstrap;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Tester\CommandTester;
+use Yireo\EnableModuleSequence\Console\Command\ModuleEnableSequenceCommand;
+
+class ModuleEnableSequenceCommandTest extends TestCase
+{
+    public function testCommandIsRegisteredInCommandList(): void
+    {
+        $commands = Bootstrap::getObjectManager()->get(CommandListInterface::class)->getCommands();
+        $command = $commands['yireo_enablemodulesequence_module_enable_sequence_command'] ?? null;
+
+        $this->assertInstanceOf(ModuleEnableSequenceCommand::class, $command);
+        $this->assertSame('module:sequence', $command->getName());
+    }
+
+    public function testExecuteEnablesModuleAfterItsSequence(): void
+    {
+        $enableCommand = new class extends Command {
+            public array $modules = [];
+
+            protected function configure(): void
+            {
+                $this->setName('module:enable');
+                $this->addArgument('module', InputArgument::IS_ARRAY);
+            }
+
+            protected function execute(InputInterface $input, OutputInterface $output): int
+            {
+                $this->modules = $input->getArgument('module');
+                return Command::SUCCESS;
+            }
+        };
+
+        $command = Bootstrap::getObjectManager()->create(ModuleEnableSequenceCommand::class);
+        $application = new Application();
+        $application->add($enableCommand);
+        $application->add($command);
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(['module' => ['Magento_Catalog']]);
+
+        $this->assertSame(Command::SUCCESS, $commandTester->getStatusCode());
+        $this->assertSame('Magento_Catalog', end($enableCommand->modules));
+        $this->assertContains('Magento_Store', $enableCommand->modules);
+        $this->assertLessThan(
+            array_search('Magento_Catalog', $enableCommand->modules),
+            array_search('Magento_Store', $enableCommand->modules)
+        );
+    }
+}
