@@ -27,7 +27,45 @@ class ModuleEnableSequenceCommandTest extends TestCase
 
     public function testExecuteEnablesModuleAfterItsSequence(): void
     {
-        $enableCommand = new class extends Command {
+        $enableCommand = $this->getEnableCommand();
+        $commandTester = $this->getCommandTester($enableCommand);
+        $commandTester->execute(['module' => ['Magento_Catalog']]);
+
+        $this->assertSame(Command::SUCCESS, $commandTester->getStatusCode());
+        $this->assertSame('Magento_Catalog', end($enableCommand->modules));
+        $this->assertContains('Magento_Store', $enableCommand->modules);
+        $this->assertLessThan(
+            array_search('Magento_Catalog', $enableCommand->modules),
+            array_search('Magento_Store', $enableCommand->modules)
+        );
+    }
+
+    public function testExecuteWarnsAboutModulesThatAreNotPresent(): void
+    {
+        $enableCommand = $this->getEnableCommand();
+        $commandTester = $this->getCommandTester($enableCommand);
+        $commandTester->execute(['module' => ['Magento_Catalog', 'Foo_NonExistent']]);
+
+        $this->assertSame(Command::SUCCESS, $commandTester->getStatusCode());
+        $this->assertStringContainsString('Module "Foo_NonExistent" is not present', $commandTester->getDisplay());
+        $this->assertContains('Magento_Catalog', $enableCommand->modules);
+        $this->assertNotContains('Foo_NonExistent', $enableCommand->modules);
+    }
+
+    public function testExecuteSucceedsWhenNoModuleIsPresent(): void
+    {
+        $enableCommand = $this->getEnableCommand();
+        $commandTester = $this->getCommandTester($enableCommand);
+        $commandTester->execute(['module' => ['Foo_NonExistent']]);
+
+        $this->assertSame(Command::SUCCESS, $commandTester->getStatusCode());
+        $this->assertStringContainsString('Module "Foo_NonExistent" is not present', $commandTester->getDisplay());
+        $this->assertSame([], $enableCommand->modules);
+    }
+
+    private function getEnableCommand(): Command
+    {
+        return new class extends Command {
             public array $modules = [];
 
             protected function configure(): void
@@ -42,21 +80,15 @@ class ModuleEnableSequenceCommandTest extends TestCase
                 return Command::SUCCESS;
             }
         };
+    }
 
+    private function getCommandTester(Command $enableCommand): CommandTester
+    {
         $command = Bootstrap::getObjectManager()->create(ModuleEnableSequenceCommand::class);
         $application = new Application();
         $application->add($enableCommand);
         $application->add($command);
 
-        $commandTester = new CommandTester($command);
-        $commandTester->execute(['module' => ['Magento_Catalog']]);
-
-        $this->assertSame(Command::SUCCESS, $commandTester->getStatusCode());
-        $this->assertSame('Magento_Catalog', end($enableCommand->modules));
-        $this->assertContains('Magento_Store', $enableCommand->modules);
-        $this->assertLessThan(
-            array_search('Magento_Catalog', $enableCommand->modules),
-            array_search('Magento_Store', $enableCommand->modules)
-        );
+        return new CommandTester($command);
     }
 }

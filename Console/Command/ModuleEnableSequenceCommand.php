@@ -43,7 +43,16 @@ class ModuleEnableSequenceCommand extends Command
 
         $moduleSequence = [];
         foreach ($moduleNames as $moduleName) {
+            if (!$this->isModulePresent($moduleName)) {
+                $output->writeln('<comment>Module "'.$moduleName.'" is not present, skipping</comment>');
+                continue;
+            }
+
             $this->collectModuleSequence($moduleName, $moduleSequence);
+        }
+
+        if (empty($moduleSequence)) {
+            return Command::SUCCESS;
         }
 
         $cmd = $this->getApplication()->find('module:enable');
@@ -109,7 +118,7 @@ class ModuleEnableSequenceCommand extends Command
                 $sequenceModuleName = (string)$sequenceModule['name'];
 
                 // A module sequence is a soft dependency, so skip modules that are not installed
-                if (empty($this->componentRegistrar->getPath(ComponentRegistrar::MODULE, $sequenceModuleName))) {
+                if (!$this->isModulePresent($sequenceModuleName)) {
                     continue;
                 }
 
@@ -118,5 +127,10 @@ class ModuleEnableSequenceCommand extends Command
         }
 
         return $moduleSequence;
+    }
+
+    private function isModulePresent(string $moduleName): bool
+    {
+        return !empty($this->componentRegistrar->getPath(ComponentRegistrar::MODULE, $moduleName));
     }
 }
