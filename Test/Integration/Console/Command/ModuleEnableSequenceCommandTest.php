@@ -8,11 +8,9 @@ use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Tester\CommandTester;
 use Yireo\EnableModuleSequence\Console\Command\ModuleEnableSequenceCommand;
+use Yireo\EnableModuleSequence\Test\Integration\Stub\ModuleEnableCommandStub;
 
 class ModuleEnableSequenceCommandTest extends TestCase
 {
@@ -63,23 +61,9 @@ class ModuleEnableSequenceCommandTest extends TestCase
         $this->assertSame([], $enableCommand->modules);
     }
 
-    private function getEnableCommand(): Command
+    private function getEnableCommand(): ModuleEnableCommandStub
     {
-        return new class extends Command {
-            public array $modules = [];
-
-            protected function configure(): void
-            {
-                $this->setName('module:enable');
-                $this->addArgument('module', InputArgument::IS_ARRAY);
-            }
-
-            protected function execute(InputInterface $input, OutputInterface $output): int
-            {
-                $this->modules = $input->getArgument('module');
-                return Command::SUCCESS;
-            }
-        };
+        return new ModuleEnableCommandStub();
     }
 
     private function getCommandTester(Command $enableCommand): CommandTester
