@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.4] - 11 November 2026
+## [1.0.4] - 12 November 2026
 ### Fixed
 - Use filesystem driver instead of `is_file()` to satisfy PHPCS
 - Warn about modules that are not present, instead of failing with "Unknown module(s)"
