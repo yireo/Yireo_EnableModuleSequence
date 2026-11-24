@@ -8,10 +8,14 @@ use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File as FileDriver;
 use SimpleXMLElement;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Formatter\OutputFormatter;
+use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class ModuleEnableSequenceCommand extends Command
 {
@@ -34,6 +38,13 @@ class ModuleEnableSequenceCommand extends Command
             'Name of one or more modules'
         );
 
+        $this->addOption(
+            'dry-run',
+            'd',
+            InputOption::VALUE_NONE,
+            'Only list the modules that would be enabled'
+        );
+
         parent::configure();
     }
 
@@ -44,7 +55,9 @@ class ModuleEnableSequenceCommand extends Command
         $moduleSequence = [];
         foreach ($moduleNames as $moduleName) {
             if (!$this->isModulePresent($moduleName)) {
-                $output->writeln('<comment>Module "'.$moduleName.'" is not present, skipping</comment>');
+                $output->writeln(
+                    '<comment>Module "'.OutputFormatter::escape($moduleName).'" is not present, skipping</comment>'
+                );
                 continue;
             }
 
@@ -55,14 +68,41 @@ class ModuleEnableSequenceCommand extends Command
             return Command::SUCCESS;
         }
 
-        $cmd = $this->getApplication()->find('module:enable');
+        $application = $this->getApplication();
+        if ($application === null || !$application->has('module:enable')) {
+            $output->writeln('<error>Command "module:enable" is not available</error>');
+            return Command::FAILURE;
+        }
+
+        $output->writeln('<info>Modules to be enabled:</info>');
+        foreach ($moduleSequence as $moduleName) {
+            $output->writeln(' - '.OutputFormatter::escape($moduleName));
+        }
+
+        if ($input->getOption('dry-run')) {
+            return Command::SUCCESS;
+        }
+
+        if ($input->isInteractive() && !$this->confirm($input, $output)) {
+            $output->writeln('<comment>Aborted, no modules were enabled</comment>');
+            return Command::SUCCESS;
+        }
 
         $enableInput = new ArrayInput([
             'module' => array_values($moduleSequence)
         ]);
 
         $enableInput->setInteractive(false);
-        return $cmd->run($enableInput, $output);
+        return $application->find('module:enable')->run($enableInput, $output);
+    }
+
+    private function confirm(InputInterface $input, OutputInterface $output): bool
+    {
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->getHelper('question');
+        $question = new ConfirmationQuestion('Enable these modules? [Y/n] ', true);
+
+        return (bool)$questionHelper->ask($input, $output, $question);
     }
 
     /**
@@ -98,17 +138,8 @@ class ModuleEnableSequenceCommand extends Command
             return [];
         }
 
-        $moduleXmlFile = $modulePath.'/etc/module.xml';
-        try {
-            if (!$this->fileDriver->isFile($moduleXmlFile)) {
-                return [];
-            }
-        } catch (FileSystemException $e) {
-            return [];
-        }
-
-        $configNode = simplexml_load_file($moduleXmlFile);
-        if (!$configNode instanceof SimpleXMLElement) {
+        $configNode = $this->loadModuleXml($modulePath.'/etc/module.xml');
+        if ($configNode === null) {
             return [];
         }
 
@@ -127,6 +158,33 @@ class ModuleEnableSequenceCommand extends Command
         }
 
         return $moduleSequence;
+    }
+
+    private function loadModuleXml(string $moduleXmlFile): ?SimpleXMLElement
+    {
+        try {
+            if (!$this->fileDriver->isFile($moduleXmlFile)) {
+                return null;
+            }
+
+            $contents = $this->fileDriver->fileGetContents($moduleXmlFile);
+        } catch (FileSystemException $e) {
+            return null;
+        }
+
+        $useInternalErrors = libxml_use_internal_errors(true);
+        try {
+            $configNode = simplexml_load_string($contents, SimpleXMLElement::class, LIBXML_NONET);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($useInternalErrors);
+        }
+
+        if (!$configNode instanceof SimpleXMLElement || $configNode->getName() !== 'config') {
+            return null;
+        }
+
+        return $configNode;
     }
 
     private function isModulePresent(string $moduleName): bool
