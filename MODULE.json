@@ -5,7 +5,7 @@
     "config": [],
     "tests": {
         "unit": 0,
-        "integration": 4,
+        "integration": 10,
         "functional": 0
     },
     "module_name": "Yireo_EnableModuleSequence",
