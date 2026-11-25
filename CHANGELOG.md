@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 25 November 2026
+### Added
+- New `--dry-run` option to only list the modules that would be enabled
+- List the resolved modules and ask for confirmation before enabling them in interactive mode
+
+### Fixed
+- Escape module names in console output, so crafted names cannot inject console formatting
+- Parse `module.xml` without network access and with suppressed libxml errors, so malformed or hostile XML files are skipped safely
+- Fail with a clear error when the `module:enable` command is not available
+
 ## [1.0.4] - 12 November 2026
 ### Fixed
 - Use filesystem driver instead of `is_file()` to satisfy PHPCS
